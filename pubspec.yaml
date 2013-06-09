@@ -1,0 +1,11 @@
+name: fancy_syntax
+description: An expressive custom binding syntax for MDV templates
+
+version: 0.0.1
+author: "Web UI Authors <html-dev@dartlang.org>"
+homepage: https://github.com/dart-lang/fancy-syntax
+
+dependencies:
+  browser: any
+  mdv_observe: any
+  unittest: any
