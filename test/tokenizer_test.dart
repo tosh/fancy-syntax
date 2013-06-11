@@ -7,14 +7,6 @@ library tokenizer_test;
 import 'package:fancy_syntax/tokenizer.dart';
 import 'package:unittest/unittest.dart';
 
-expectTokens(String s, List<Token> tokens) {
-  var tokens = new Tokenizer('abc').tokenize();
-  var matchers = tokens.map((t) => isToken(t.kind, t.value)).toList();
-  expect(tokens, matchList(matchers), reason: s);
-}
-
-Token t(int kind, String value) => new Token(kind, value);
-
 main() {
 
   group('tokenizer', () {
@@ -112,6 +104,14 @@ class TokenMatcher extends BaseMatcher {
 
   Description describe(Description d) => d.add('isToken($kind, $value) ');
 }
+
+expectTokens(String s, List<Token> expected) {
+  var tokens = new Tokenizer(s).tokenize();
+  var matchers = expected.map((t) => isToken(t.kind, t.value)).toList();
+  expect(tokens, matchList(matchers), reason: s);
+}
+
+Token t(int kind, String value) => new Token(kind, value);
 
 MatcherList matchList(List matchers) => new MatcherList(matchers);
 
