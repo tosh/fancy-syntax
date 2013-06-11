@@ -12,7 +12,18 @@ BSD-style license that can be found in the LICENSE file.
 
   <body>
     <template id="test" bind syntax="fancy">
-      <h1>Hello {{ getFullName() }}!</h1>
+      <h1>Fancy Syntax</h1>
+      <label> first name: <input value="{{ firstName }}"></label>
+      <label> last name: <input value="{{ lastName }}"></label>
+      <div>Hello {{ getFullName() }}!</div>
+      <div>{{ firstName }} {{ lastName }}</div>
+    </template>
+
+    <template id="test2" bind>
+      <h1>Default Syntax</h1>
+      <label> first name: <input value="{{ firstName }}"></label>
+      <label> last name: <input value="{{ lastName }}"></label>
+      <div>{{ firstName }} {{ lastName }}</div>
     </template>
 
     <script type="application/dart" src="example.dart"></script>

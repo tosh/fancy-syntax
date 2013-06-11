@@ -8,7 +8,9 @@ import 'expression.dart';
 import 'parser.dart';
 
 abstract class Visitor {
+
   visitExpression(Expression e);
+  visitEmptyExpression(EmptyExpression e);
   visitParenthesizedExpression(ParenthesizedExpression e);
   visitInvoke(Invoke i);
   visitLiteral(Literal l);

@@ -32,24 +32,22 @@ final _UNARY_OPERATORS = {
   '!': (a) => !a,
 };
 
-Object eval(Expression expr, {Object target, Map<String, Object> topLevel}) {
-  var visitor = new MirrorEvaluator(target, topLevel: topLevel);
+Object eval(Expression expr, {Object target, Map<String, Object> scope}) {
+  var visitor = new MirrorEvaluator(target, scope: scope);
   return visitor.visitExpression(expr);
 }
-
-// TODO(justin): Add assign() function
 
 class MirrorEvaluator extends Visitor {
   final Object target;
   final InstanceMirror targetMirror;
-  final Map<String, Object> topLevel;
+  final Map<String, Object> scope;
 
-  Object value;
-
-  MirrorEvaluator(target, {this.topLevel})
+  MirrorEvaluator(target, {this.scope})
       : target = target, targetMirror = reflect(target);
 
   visitExpression(Expression e) => e.accept(this);
+
+  visitEmptyExpression(EmptyExpression e) => target;
 
   visitParenthesizedExpression(ParenthesizedExpression e) =>
     e.expr.accept(this);
@@ -60,8 +58,12 @@ class MirrorEvaluator extends Visitor {
         : i.arguments.map((a) => a.accept(this)).toList(growable: false);
     if (i.method == null) {
       var receiver = i.receiver.accept(this);
-      assert(receiver is Function);
-      return _wrap(receiver)(args);
+      if (i.isGetter) {
+        return receiver;
+      } else {
+        assert(receiver is Function);
+        return _wrap(receiver)(args);
+      }
     } else {
       var receiver = i.receiver.accept(this);
       // special case [] because we don't need mirrors
@@ -81,19 +83,19 @@ class MirrorEvaluator extends Visitor {
   // identifiers will be stored as the method of an Invoke node.
   visitIdentifier(Identifier e) {
     String name = e.value;
-    if (topLevel != null && topLevel.containsKey(name)) {
-      return _wrap(topLevel[name]);
+    if (scope != null && scope.containsKey(name)) {
+      return _wrap(scope[name]);
     } else if (target != null) {
       var symbol = new Symbol(name);
       var classMirror = targetMirror.type;
-      if (classMirror.variables.containsKey(symbol)) {
+      if (classMirror.variables.containsKey(symbol) ||
+          classMirror.getters.containsKey(symbol)) {
         return _wrap(targetMirror.getField(new Symbol(name)).reflectee);
       } else if (classMirror.methods.containsKey(symbol)) {
         return new _InvokeWrapper(targetMirror, symbol);
       }
-    } else {
-      throw new EvalException("variable not found: $name");
     }
+    throw new EvalException("variable not found: $name");
   }
 
   visitLiteral(Literal l) => l.value;

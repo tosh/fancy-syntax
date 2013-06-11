@@ -14,6 +14,10 @@ expectParse(String s, Expression e) =>
 main() {
   group('parser', () {
 
+    test('should parse an empty expression', () {
+      expectParse('', empty());
+    });
+
     test('should parse an identifier', () {
       expectParse('abc', ident('abc'));
     });

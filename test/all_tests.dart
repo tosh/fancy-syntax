@@ -4,12 +4,14 @@
 
 library all_tests;
 
+import 'assign_test.dart' as assign;
 import 'eval_test.dart' as eval;
 import 'parser_test.dart' as parser;
 import 'tokenizer_test.dart' as tokenizer;
 
 main() {
-  eval.main();
-  parser.main();
   tokenizer.main();
+  parser.main();
+  eval.main();
+  assign.main();
 }

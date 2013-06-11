@@ -10,6 +10,8 @@ import 'expression.dart';
 
 const _UNARY_OPERATORS = const ['+', '-', '!'];
 
+Expression parse(String expr) => new Parser(expr).parse();
+
 class Parser {
   final Tokenizer _tokenizer;
   List<Token> _tokens;
@@ -34,6 +36,7 @@ class Parser {
   }
 
   Expression _parseExpression() {
+    if (_token == null) return new EmptyExpression();
     var expr = _parseUnary();
     return (expr == null) ? null : _parsePrecedence(expr, 0);
   }

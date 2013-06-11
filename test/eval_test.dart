@@ -18,15 +18,19 @@ class Foo {
   int x() => b * c;
 }
 
-Object evalString(String s, [Object target, Map topLevel]) =>
-    eval(new Parser(s).parse(), target: target, topLevel: topLevel);
+Object evalString(String s, [Object target, Map scope]) =>
+    eval(new Parser(s).parse(), target: target, scope: scope);
 
-expectEval(String s, dynamic matcher, [Object target, Map topLevel]) =>
-    expect(eval(new Parser(s).parse(), target: target, topLevel: topLevel),
+expectEval(String s, dynamic matcher, [Object target, Map scope]) =>
+    expect(eval(new Parser(s).parse(), target: target, scope: scope),
         matcher, reason: s);
 
 main() {
   group('eval', () {
+    test('should return the target for an empty expression', () {
+      expectEval('', 'target', 'target');
+    });
+
     test('should return a literal int', () {
       expectEval('1', 1);
       expectEval('+1', 1);

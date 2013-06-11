@@ -19,6 +19,10 @@ main() {
 
   group('tokenizer', () {
 
+    test('should tokenize an empty expression', () {
+      expectTokens('', []);
+    });
+
     test('should tokenize an identifier', () {
       expectTokens('abc', [t(IDENTIFIER_TOKEN, 'abc')]);
     });

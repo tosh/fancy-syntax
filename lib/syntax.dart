@@ -5,16 +5,19 @@
 library fancy_syntax;
 
 import 'dart:html';
+import 'dart:collection';
 import 'package:mdv_observe/mdv_observe.dart';
 
+import 'assign.dart';
 import 'eval.dart';
 import 'parser.dart';
 import 'expression.dart';
+import 'visitor.dart';
 
 class FancySyntax extends CustomBindingSyntax {
 
   Binding getBinding(model, String path, name, node) {
-    if (path != null && path.isNotEmpty) {
+    if (path != null) {
       var expr = new Parser(path).parse();
       return new Binding(expr, model);
     } else {
@@ -38,14 +41,26 @@ class Binding extends Object with ObservableMixin {
   final Expression _expr;
   final _model;
 
-  Binding(this._expr, this._model);
+  Binding(Expression expr, this._model)
+    : _expr = expr {
+    print("Binding: $expr");
+  }
 
-  get value => eval(_expr, target: _model);
+  get value {
+    try {
+      var value = eval(_expr, target: _model);
+    } on EvalException catch (e) {
+      // silently swallow binding errors
+    }
+    return value;
+  }
 
   set value(v) {
-    if (_isAssignable()) {
-
+    try {
+      assign(_expr, _model, v);
       notifyChange(new PropertyChangeRecord(_VALUE));
+    } on EvalException catch (e) {
+      // silently swallow binding errors
     }
   }
 
@@ -53,8 +68,8 @@ class Binding extends Object with ObservableMixin {
     if (key == _VALUE) return value;
   }
 
-  bool _isAssignable() {
-    // TODO(justin): dot, index and filter expressions, move to eval.dart?
-    if (_expr is Identifier) return true;
+  setValueWorkaround(key, v) {
+    if (key == _VALUE) value = v;
   }
+
 }

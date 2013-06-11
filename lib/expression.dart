@@ -8,6 +8,7 @@ import 'visitor.dart';
 
 // Helper functions for building expression trees programmatically
 
+EmptyExpression empty() => new EmptyExpression();
 Literal literal(v) => new Literal(v);
 Identifier ident(String v) => new Identifier(v);
 ParenthesizedExpression paren(Expression e) => new ParenthesizedExpression(e);
@@ -20,6 +21,11 @@ Invoke invoke(Expression e, String m, [List<Expression> a]) =>
 /// Base class for all expressions
 abstract class Expression {
   accept(Visitor v);
+}
+
+class EmptyExpression extends Expression {
+  accept(Visitor v) => v.visitEmptyExpression(this);
+  bool operator ==(o) => o is EmptyExpression;
 }
 
 class Literal<T> extends Expression {
