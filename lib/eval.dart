@@ -7,9 +7,10 @@ library fancy_syntax.eval;
 import 'dart:collection';
 import 'dart:mirrors';
 
+import 'expression.dart';
+import 'filter.dart';
 import 'visitor.dart';
 import 'parser.dart';
-import 'expression.dart';
 
 final _BINARY_OPERATORS = {
   '+':  (a, b) => a + b,
@@ -24,6 +25,11 @@ final _BINARY_OPERATORS = {
   '<=': (a, b) => a <= b,
   '||': (a, b) => a || b,
   '&&': (a, b) => a && b,
+  '|':  (a, f) {
+    if (f is Transformer) return f.forward(a);
+    if (f is Filter) return f(a);
+    throw new EvalException("Filters must be a one-argument function.");
+  }
 };
 
 final _UNARY_OPERATORS = {
@@ -105,26 +111,26 @@ class MirrorEvaluator extends Visitor {
     var right = o.right.accept(this);
     var f = _BINARY_OPERATORS[o.operator];
     // TODO(justin): type coercion
-    return f(left, right);
+    return f(_unwrap(left), _unwrap(right));
   }
 
   visitUnaryOperator(UnaryOperator o) {
     var e = o.expr.accept(this);
     var f = _UNARY_OPERATORS[o.operator];
     // TODO(justin): type coercion
-    return f(e);
+    return f(_unwrap(e));
   }
 }
 
 /**
  * If [v] is a closure, wraps it in a _ClosureWrapper so that it can be invoked
  * consistently, else return the value.
- *
- * TODO(justin): Unwrap at the top level for bindings? How do you unwrap an
- * _InvokeWrapper? We'd need to generate the closure.
  */
 dynamic _wrap(v) =>
     (v is Function && v is! _FunctionWrapper) ? new _ClosureWrapper(v) : v;
+
+// TODO(justin): unwrap for _InvokeWrapper
+dynamic _unwrap(v) => (v is _ClosureWrapper) ? v.f : v;
 
 abstract class _FunctionWrapper {}
 

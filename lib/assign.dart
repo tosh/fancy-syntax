@@ -4,11 +4,13 @@
 
 library fancy_syntax.assign;
 
+import 'dart:collection';
 import 'dart:mirrors';
 
-import 'expression.dart';
-import 'visitor.dart';
 import 'eval.dart';
+import 'expression.dart';
+import 'filter.dart';
+import 'visitor.dart';
 
 void assign(Expression expr, Object target, Object value,
             {Map<String, Object> scope}) {
@@ -19,6 +21,12 @@ void assign(Expression expr, Object target, Object value,
   Expression expression;
   dynamic property;
   bool isIndex = false;
+  var filters = <Expression>[]; // reversed order for assignment
+
+  while (expr is BinaryOperator && expr.operator == '|') {
+    filters.add(expr.right);
+    expr = expr.left;
+  }
 
   if (expr is Identifier) {
     expression = empty();
@@ -40,6 +48,15 @@ void assign(Expression expr, Object target, Object value,
     notAssignable();
   }
 
+  // transform the values backwards through the filters
+  for (var filterExpr in filters) {
+    var filter = eval(filterExpr, target: target, scope: scope);
+    if (filter is! Transformer) {
+      throw new EvalException("filter must implement Transformer");
+    }
+    value = filter.reverse(value);
+  }
+  // make the assignment
   var o = eval(expression, target: target, scope: scope);
   assert(o != null);
   if (isIndex) {

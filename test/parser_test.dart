@@ -152,5 +152,10 @@ main() {
           invoke(ident('c'), '[]', [ident('d')])));
     });
 
+    test('should parse a filter chain', () {
+      expectParse('a | b | c', binary(binary(ident('a'), '|', ident('b')),
+          '|', ident('c')));
+    });
+
   });
 }

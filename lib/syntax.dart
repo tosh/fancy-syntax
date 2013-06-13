@@ -15,11 +15,15 @@ import 'expression.dart';
 import 'visitor.dart';
 
 class FancySyntax extends CustomBindingSyntax {
+  final Map<String, Object> scope;
 
-  Binding getBinding(model, String path, name, node) {
+  FancySyntax({Map<String, Object> scope})
+      : scope = (scope == null) ? new Map<String, Object>() : scope;
+
+  _Binding getBinding(model, String path, name, node) {
     if (path != null) {
       var expr = new Parser(path).parse();
-      return new Binding(expr, model);
+      return new _Binding(expr, model, scope);
     } else {
       return null;
     }
@@ -35,24 +39,21 @@ class FancySyntax extends CustomBindingSyntax {
  * 2-way bindings will be restricted to expressions with a single simple path
  * where all filters are 2-way transformers.
  */
-class Binding extends Object with ObservableMixin {
+class _Binding extends Object with ObservableMixin {
   static const _VALUE = const Symbol('value');
 
+  final Map<String, Object> _scope;
   final Expression _expr;
   final _model;
 
-  Binding(Expression expr, this._model)
-    : _expr = expr {
-    print("Binding: $expr");
-  }
+  _Binding(this._expr, this._model, this._scope);
 
   get value {
     try {
-      var value = eval(_expr, target: _model);
+      return eval(_expr, target: _model);
     } on EvalException catch (e) {
       // silently swallow binding errors
     }
-    return value;
   }
 
   set value(v) {

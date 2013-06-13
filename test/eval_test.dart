@@ -5,18 +5,9 @@
 library eval_test;
 
 import 'package:fancy_syntax/eval.dart';
+import 'package:fancy_syntax/filter.dart';
 import 'package:fancy_syntax/parser.dart';
 import 'package:unittest/unittest.dart';
-
-class Foo {
-  String a;
-  int b;
-  int c;
-
-  Foo(this.a, this.b, this.c);
-
-  int x() => b * c;
-}
 
 Object evalString(String s, [Object target, Map scope]) =>
     eval(new Parser(s).parse(), target: target, scope: scope);
@@ -125,5 +116,51 @@ main() {
       expectEval('map["a"] + map["b"]', 3, null, {'map': map});
     });
 
+    test('should call a filter', () {
+      var topLevel = {
+        'a': 'foo',
+        'uppercase': (s) => s.toUpperCase(),
+      };
+      expectEval('a | uppercase', 'FOO', null, topLevel);
+    });
+
+    test('should call a transformer', () {
+      var topLevel = {
+        'a': '42',
+        'parseInt': parseInt,
+        'add': add,
+      };
+      expectEval('a | parseInt()', 42, null, topLevel);
+      expectEval('a | parseInt(8)', 34, null, topLevel);
+      expectEval('a | parseInt() | add(10)', 52, null, topLevel);
+    });
   });
+}
+
+class Foo {
+  String a;
+  int b;
+  int c;
+
+  Foo(this.a, this.b, this.c);
+
+  int x() => b * c;
+}
+
+parseInt([int radix = 10]) => new IntToString(radix: radix);
+
+class IntToString extends Transformer<int, String> {
+  final int radix;
+  IntToString({this.radix: 10});
+  int forward(String s) => int.parse(s, radix: radix);
+  String reverse(int i) => '$i';
+}
+
+add(int i) => new Add(i);
+
+class Add extends Transformer<int, int> {
+  final int i;
+  Add(this.i);
+  int forward(int x) => x + i;
+  int reverse(int x) => x - i;
 }
