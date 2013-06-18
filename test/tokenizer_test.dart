@@ -58,6 +58,13 @@ main() {
           t(IDENTIFIER_TOKEN, 'b')]);
     });
 
+    test('should tokenize an iterate expression with "in" keyword', () {
+      expectTokens('item in items', [
+          t(IDENTIFIER_TOKEN, 'item'),
+          t(KEYWORD_TOKEN, 'in'),
+          t(IDENTIFIER_TOKEN, 'items')]);
+    });
+
     test('should tokenize groups', () {
       expectTokens('a(b)[]', [
           t(IDENTIFIER_TOKEN, 'a'),
@@ -79,13 +86,18 @@ main() {
 
     test('should tokenize integers', () {
       expectTokens('123', [t(INTEGER_TOKEN, '123')]);
+      expectTokens('+123', [t(OPERATOR_TOKEN, '+'), t(INTEGER_TOKEN, '123')]);
+      expectTokens('-123', [t(OPERATOR_TOKEN, '-'), t(INTEGER_TOKEN, '123')]);
     });
 
     test('should tokenize decimals', () {
       expectTokens('1.23', [t(DECIMAL_TOKEN, '1.23')]);
+      expectTokens('+1.23', [t(OPERATOR_TOKEN, '+'), t(DECIMAL_TOKEN, '1.23')]);
+      expectTokens('-1.23', [t(OPERATOR_TOKEN, '-'), t(DECIMAL_TOKEN, '1.23')]);
     });
 
     test('should tokenize booleans as identifiers', () {
+      expectTokens('true', [t(IDENTIFIER_TOKEN, 'true')]);
       expectTokens('false', [t(IDENTIFIER_TOKEN, 'false')]);
     });
 

@@ -12,6 +12,7 @@ expectParse(String s, Expression e) =>
     expect(new Parser(s).parse(), e, reason: s);
 
 main() {
+
   group('parser', () {
 
     test('should parse an empty expression', () {
@@ -155,6 +156,22 @@ main() {
     test('should parse a filter chain', () {
       expectParse('a | b | c', binary(binary(ident('a'), '|', ident('b')),
           '|', ident('c')));
+    });
+
+    test('should parse comprehension', () {
+      expectParse('a in b', inExpr(ident('a'), ident('b')));
+      expectParse('a in b.c',
+          inExpr(ident('a'), invoke(ident('b'), 'c', null)));
+      expectParse('a in b + c',
+          inExpr(ident('a'), binary(ident('b'), '+', ident('c'))));
+    });
+
+    test('should reject comprehension with non-assignable left expression', () {
+      expect(() => parse('a + 1 in b'), throwsException);
+    });
+
+    test('should reject keywords as identifiers', () {
+      expect(() => parse('a.in'), throwsException);
     });
 
   });

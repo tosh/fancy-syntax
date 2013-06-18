@@ -9,12 +9,14 @@ import 'package:mdv_observe/mdv_observe.dart';
 class Person extends Object with ObservableMixin {
   static const _FIRST_NAME = const Symbol('firstName');
   static const _LAST_NAME = const Symbol('lastName');
+  static const _ITEMS = const Symbol('items');
   static const _GET_FULL_NAME = const Symbol('getFullName');
 
   String _firstName;
   String _lastName;
+  List<String> _items;
 
-  Person(this._firstName, this._lastName);
+  Person(this._firstName, this._lastName, this._items);
 
   String get firstName => _firstName;
 
@@ -32,21 +34,29 @@ class Person extends Object with ObservableMixin {
 
   String getFullName() => '$_firstName $_lastName';
 
+  List<String> get items => _items;
+
+  void set items(List<String> value) {
+    _items = value;
+    notifyChange(new PropertyChangeRecord(_ITEMS));
+  }
+
   String toString() => "Person(firstName: $_firstName, lastName: $_lastName)";
 
   getValueWorkaround(key) {
     if (key == _FIRST_NAME) return _firstName;
     if (key == _LAST_NAME) return _lastName;
     if (key == _GET_FULL_NAME) return getFullName();
+    if (key == _ITEMS) return _items;
   }
 
   void setValueWorkaround(key, Object value) {
     if (key == _FIRST_NAME) {
-      _firstName = value;
-      notifyChange(new PropertyChangeRecord(_FIRST_NAME));
+      firstName = value;
     } else if (key == _LAST_NAME) {
-      _lastName = value;
-      notifyChange(new PropertyChangeRecord(_LAST_NAME));
+      lastName = value;
+    } else if (key == _ITEMS) {
+      items = value;
     }
   }
 

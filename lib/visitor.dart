@@ -8,7 +8,7 @@ import 'expression.dart';
 import 'parser.dart';
 
 abstract class Visitor {
-
+  visit(Expression s) => s.accept(this);
   visitExpression(Expression e);
   visitEmptyExpression(EmptyExpression e);
   visitParenthesizedExpression(ParenthesizedExpression e);
@@ -17,5 +17,5 @@ abstract class Visitor {
   visitIdentifier(Identifier i);
   visitBinaryOperator(BinaryOperator o);
   visitUnaryOperator(UnaryOperator o);
-
+  visitInExpression(InExpression c);
 }

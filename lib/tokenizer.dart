@@ -55,6 +55,8 @@ const _GROUPERS = const [_OPEN_PAREN, _CLOSE_PAREN,
 
 const _TWO_CHAR_OPS = const ['==', '!=', '<=', '>=', '||', '&&'];
 
+const _KEYWORDS = const ['in'];
+
 const _PRECEDENCE = const {
   '!':  0,
   ':':  0,
@@ -103,10 +105,11 @@ const int INTEGER_TOKEN = 5;
 const int DECIMAL_TOKEN = 6;
 const int OPERATOR_TOKEN = 7;
 const int GROUPER_TOKEN = 8;
+const int KEYWORD_TOKEN = 9;
 
 bool isWhitespace(int next) => next == _SPACE || next == _TAB || next == _NBSP;
 
-bool isIdentifierStart(int next) => (_a <= next && next <= _z) ||
+bool isIdentifierOrKeywordStart(int next) => (_a <= next && next <= _z) ||
     (_A <= next && next <= _Z) || next == _US || next == _$ || next > 127;
 
 bool isIdentifier(int next) => (_a <= next && next <= _z) ||
@@ -162,8 +165,8 @@ class Tokenizer {
         _advance();
       } else if (isQuote(_next)) {
         tokenizeString();
-      } else if (isIdentifierStart(_next)) {
-        tokenizeIdentifier();
+      } else if (isIdentifierOrKeywordStart(_next)) {
+        tokenizeIdentifierOrKeyword();
       } else if (isNumber(_next)) {
         tokenizeNumber();
       } else if (_next == _PERIOD) {
@@ -200,12 +203,17 @@ class Tokenizer {
     _advance();
   }
 
-  tokenizeIdentifier() {
+  tokenizeIdentifierOrKeyword() {
     while (_next != null && isIdentifier(_next)) {
       _sb.writeCharCode(_next);
       _advance();
     }
-    _tokens.add(new Token(IDENTIFIER_TOKEN, _sb.toString()));
+    var value = _sb.toString();
+    if (_KEYWORDS.contains(value)) {
+      _tokens.add(new Token(KEYWORD_TOKEN, value));
+    } else {
+      _tokens.add(new Token(IDENTIFIER_TOKEN, value));
+    }
     _sb.clear();
   }
 
@@ -272,7 +280,7 @@ class Tokenizer {
   }
 }
 
-class ParseException {
+class ParseException implements Exception {
   final String message;
   ParseException(this.message);
   String toString() => "ParseException: $message";

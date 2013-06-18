@@ -17,13 +17,27 @@ BSD-style license that can be found in the LICENSE file.
       <label> last name: <input value="{{ lastName }}"></label>
       <div>Hello {{ getFullName() }}!</div>
       <div>{{ firstName }} {{ lastName }}</div>
-    </template>
-
-    <template id="test2" bind>
-      <h1>Default Syntax</h1>
-      <label> first name: <input value="{{ firstName }}"></label>
-      <label> last name: <input value="{{ lastName }}"></label>
-      <div>{{ firstName }} {{ lastName }}</div>
+      <template bind="{{ firstName }}">
+        <div>first name: {{ }}</div>
+      </template>
+      <div>
+        <h2>Iteration</h2>
+        <ul>
+          <template repeat="{{ item in items }}">
+            <li>{{ item }}</li>
+          </template>
+        </ul>
+        <ul>
+          <template repeat="{{ people }}">
+            <li>{{ getFullName() }}</li>
+            <ul>
+              <template repeat="{{ item in items }}">
+                <li>{{ firstName }} {{ item }}</li>
+              </template>
+            </ul>
+          </template>
+        </ul>
+      </div>
     </template>
 
     <script type="application/dart" src="example.dart"></script>

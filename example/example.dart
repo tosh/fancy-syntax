@@ -9,10 +9,14 @@ import 'package:fancy_syntax/syntax.dart';
 import 'person.dart';
 
 main() {
-  TemplateElement.syntax['fancy'] = new FancySyntax(scope: {
-    'uppercase' : (String v) => v.toUpperCase(),
-  });
-  var john = new Person('John', 'Messerly');
+  var john = new Person('John', 'Messerly', ['A', 'B', 'C']);
+  var justin = new Person('Justin', 'Fagnani', ['D', 'E', 'F']);
+  var globals = {
+    'uppercase': (String v) => v.toUpperCase(),
+    'people': [john, justin],
+  };
+
+  TemplateElement.syntax['fancy'] = new FancySyntax(globals: globals);
+
   query('#test').model = john;
-  query('#test2').model = john;
 }

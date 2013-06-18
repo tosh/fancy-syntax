@@ -62,6 +62,8 @@ class Parser {
         _advance();
         var right = _parseUnary();
         left = _makeInvoke(left, right);
+      } else if (_token.kind == KEYWORD_TOKEN && _token.value == 'in') {
+        left = _parseComprehension(left);
       } else if (_token.kind == OPERATOR_TOKEN
           && _token.precedence >= precedence) {
         left = _parseBinary(left);
@@ -145,6 +147,17 @@ class Parser {
     }
   }
 
+  InExpression _parseComprehension(Expression left) {
+    assert(_token.value == 'in');
+    if (left is! Identifier) {
+      throw new ParseException(
+          "in... statements must start with an identifier");
+    }
+    _advance();
+    var right = _parseExpression();
+    return new InExpression(left, right);
+  }
+
   Expression _parseInvokeOrIdentifier() {
     if (_token.value == 'true') {
       _advance();
@@ -163,7 +176,7 @@ class Parser {
     }
   }
 
-  Expression _parseInvoke() {
+  Invoke _parseInvoke() {
     var identifier = _parseIdentifier();
     var args = _parseArguments();
     return new Invoke(null, identifier, args);
@@ -171,7 +184,7 @@ class Parser {
 
   Identifier _parseIdentifier() {
     if (_token.kind != IDENTIFIER_TOKEN) {
-      throw new ParseException("expected identifier: $_token");
+      throw new ParseException("expected identifier: $_token.value");
     }
     var value = _token.value;
     _advance();
@@ -205,26 +218,26 @@ class Parser {
     return null;
   }
 
-  Expression _parseParenthesized() {
+  ParenthesizedExpression _parseParenthesized() {
     _advance();
     var expr = _parseExpression();
     _advance(GROUPER_TOKEN, ')');
     return new ParenthesizedExpression(expr);
   }
 
-  Expression _parseString() {
+  Literal<String> _parseString() {
     var value = new Literal<String>(_token.value);
     _advance();
     return value;
   }
 
-  Expression _parseInteger([String prefix = '']) {
+  Literal<int> _parseInteger([String prefix = '']) {
     var value = new Literal<int>(int.parse('$prefix${_token.value}'));
     _advance();
     return value;
   }
 
-  Expression _parseDecimal([String prefix = '']) {
+  Literal<double> _parseDecimal([String prefix = '']) {
     var value = new Literal<double>(double.parse('$prefix${_token.value}'));
     _advance();
     return value;

@@ -17,6 +17,7 @@ BinaryOperator binary(Expression l, String op, Expression r) =>
     new BinaryOperator(l, op, r);
 Invoke invoke(Expression e, String m, [List<Expression> a]) =>
     new Invoke(e, m, a);
+InExpression inExpr(Expression l, Expression r) => new InExpression(l, r);
 
 /// Base class for all expressions
 abstract class Expression {
@@ -100,6 +101,20 @@ class BinaryOperator extends Expression {
       && o.left == left && o.right == right;
 }
 
+class InExpression extends Expression {
+  final Expression left;
+  final Expression right;
+
+  InExpression(this.left, this.right);
+
+  accept(Visitor v) => v.visitInExpression(this);
+
+  String toString() => '($left in $right)';
+
+  bool operator ==(o) => o is InExpression && o.left == left
+      && o.right == right;
+}
+
 /**
  * Represents a function or method invocation. If [method] is null, then
  * [receiver] is an expression that should evaluate to a function. If [method]
@@ -128,6 +143,7 @@ class Invoke extends Expression {
 
 bool _listEquals(List a, List b) {
   if (a == b) return true;
+  if (a == null || b == null) return false;
   if (a.length != b.length) return false;
   for (int i = 0; i < a.length; i++) {
     if (a[i] != b[i]) return false;

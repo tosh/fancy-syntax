@@ -9,11 +9,11 @@ import 'package:fancy_syntax/filter.dart';
 import 'package:fancy_syntax/parser.dart';
 import 'package:unittest/unittest.dart';
 
-Object evalString(String s, [Object target, Map scope]) =>
-    eval(new Parser(s).parse(), target: target, scope: scope);
+Object evalString(String s, [Object model, Map vars]) =>
+    eval(new Parser(s).parse(), new Scope(model: model, variables: vars));
 
-expectEval(String s, dynamic matcher, [Object target, Map scope]) =>
-    expect(eval(new Parser(s).parse(), target: target, scope: scope),
+expectEval(String s, dynamic matcher, [Object model, Map vars]) =>
+    expect(eval(new Parser(s).parse(), new Scope(model: model, variables: vars)),
         matcher, reason: s);
 
 main() {
@@ -86,16 +86,16 @@ main() {
     });
 
     test('should invoke a method on the target', () {
-      var foo = new Foo('foo', 2, 3);
+      var foo = new Foo(name: 'foo', age: 2);
       expectEval('x()', foo.x(), foo);
-      expectEval('a', foo.a, foo);
+      expectEval('name', foo.name, foo);
     });
 
     test('should invoke chained methods', () {
-      var foo = new Foo('foo', 2, 3);
-      expectEval('a.length', foo.a.length, foo);
+      var foo = new Foo(name: 'foo', age: 2);
+      expectEval('name.length', foo.name.length, foo);
       expectEval('x().toString()', foo.x().toString(), foo);
-      expectEval('a.substring(2)', foo.a.substring(2), foo);
+      expectEval('name.substring(2)', foo.name.substring(2), foo);
       expectEval('a()()', 1, null, {'a': () => () => 1});
     });
 
@@ -106,7 +106,7 @@ main() {
     });
 
     test('should give precedence to top-level functions over methods', () {
-      var foo = new Foo('foo', 2, 3);
+      var foo = new Foo(name: 'foo', age: 2);
       expectEval('x()', 42, foo, {'x': () => 42});
     });
 
@@ -135,16 +135,82 @@ main() {
       expectEval('a | parseInt() | add(10)', 52, null, topLevel);
     });
   });
+
+  group('assign', () {
+
+    test('should assign a single identifier', () {
+      var foo = new Foo(name: 'a');
+      assign(parse('name'), 'b', new Scope(model: foo));
+      expect(foo.name, 'b');
+    });
+
+    test('should assign a sub-property', () {
+      var child = new Foo(name: 'child');
+      var parent = new Foo(child: child);
+      assign(parse('child.name'), 'Joe', new Scope(model: parent));
+      expect(parent.child.name, 'Joe');
+    });
+
+    test('should assign an index', () {
+      var foo = new Foo(items: [1, 2, 3]);
+      assign(parse('items[0]'), 4, new Scope(model: foo));
+      expect(foo.items[0], 4);
+    });
+
+    test('should assign through transformers', () {
+      var foo = new Foo(name: '42', age: 32);
+      var globals = {
+        'a': '42',
+        'parseInt': parseInt,
+        'add': add,
+      };
+      var scope = new Scope(model: foo, variables: globals);
+      assign(parse('age | add(7)'), 29, scope);
+      expect(foo.age, 22);
+      assign(parse('name | parseInt() | add(10)'), 29, scope);
+      expect(foo.name, '19');
+    });
+
+  });
+
+  group('scope', () {
+    test('should return fields on the model', () {
+      var foo = new Foo(name: 'a', age: 1);
+      var scope = new Scope(model: foo);
+      expect(scope['name'], 'a');
+      expect(scope['age'], 1);
+    });
+
+    test('should throw for undefined names', () {
+      var scope = new Scope();
+      expect(() => scope['a'], throwsException);
+    });
+
+    test('should return variables', () {
+      var scope = new Scope(variables: {'a': 'A'});
+      expect(scope['a'], 'A');
+    });
+
+    test("should a field from the parent's model", () {
+      var parent = new Scope(variables: {'a': 'A', 'b': 'B'});
+      var child = new Scope(variables: {'a': 'a'}, parent: parent);
+      expect(child['a'], 'a');
+      expect(parent['a'], 'A');
+      expect(child['b'], 'B');
+    });
+
+  });
 }
 
 class Foo {
-  String a;
-  int b;
-  int c;
+  String name;
+  int age;
+  Foo child;
+  List<int> items;
 
-  Foo(this.a, this.b, this.c);
+  Foo({this.name, this.age, this.child, this.items});
 
-  int x() => b * c;
+  int x() => age * age;
 }
 
 parseInt([int radix = 10]) => new IntToString(radix: radix);
