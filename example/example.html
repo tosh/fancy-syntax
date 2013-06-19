@@ -29,7 +29,7 @@ BSD-style license that can be found in the LICENSE file.
         </ul>
         <ul>
           <template repeat="{{ people }}">
-            <li>{{ getFullName() }}</li>
+            <li>{{ firstName }} {{ lastName }}</li>
             <ul>
               <template repeat="{{ item in items }}">
                 <li>{{ firstName }} {{ item }}</li>
@@ -38,6 +38,12 @@ BSD-style license that can be found in the LICENSE file.
           </template>
         </ul>
       </div>
+    </template>
+
+    <template id="test2" bind>
+      <h1>Default  Syntax</h1>
+      <label> first name: <input value="{{ firstName }}"></label>
+      <label> last name: <input value="{{ lastName }}"></label>
     </template>
 
     <script type="application/dart" src="example.dart"></script>

@@ -7,9 +7,8 @@ library fancy_syntax.visitor;
 import 'expression.dart';
 import 'parser.dart';
 
-abstract class Visitor {
-  visit(Expression s) => s.accept(this);
-  visitExpression(Expression e);
+abstract class Visitor<E extends Expression> {
+  visit(E s) => s.accept(this);
   visitEmptyExpression(EmptyExpression e);
   visitParenthesizedExpression(ParenthesizedExpression e);
   visitInvoke(Invoke i);
@@ -18,4 +17,46 @@ abstract class Visitor {
   visitBinaryOperator(BinaryOperator o);
   visitUnaryOperator(UnaryOperator o);
   visitInExpression(InExpression c);
+}
+
+abstract class RecursiveVisitor<E> extends Visitor<E> {
+  visitExpression(E e);
+
+  visitEmptyExpression(EmptyExpression e) => visitExpression(e);
+
+  visitParenthesizedExpression(ParenthesizedExpression e) {
+    visit(e);
+    visitExpression(e);
+  }
+
+  visitInvoke(Invoke i) {
+    visit(i.receiver);
+    if (i.arguments != null) {
+      for (var a in i.arguments) {
+        visit(a);
+      }
+    }
+    visitExpression(i);
+  }
+
+  visitLiteral(Literal l) => visitExpression(l);
+
+  visitIdentifier(Identifier i) => visitExpression(i);
+
+  visitBinaryOperator(BinaryOperator o) {
+    visit(o.left);
+    visit(o.right);
+    visitExpression(o);
+  }
+
+  visitUnaryOperator(UnaryOperator o) {
+    visit(o.child);
+    visitExpression(o);
+  }
+
+  visitInExpression(InExpression c) {
+    visit(c.left);
+    visit(c.right);
+    visitExpression(c);
+  }
 }

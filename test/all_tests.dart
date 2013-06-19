@@ -4,11 +4,15 @@
 
 library all_tests;
 
+import 'package:unittest/html_enhanced_config.dart';
+
 import 'eval_test.dart' as eval;
 import 'parser_test.dart' as parser;
 import 'tokenizer_test.dart' as tokenizer;
 
 main() {
+  useHtmlEnhancedConfiguration();
+
   tokenizer.main();
   parser.main();
   eval.main();

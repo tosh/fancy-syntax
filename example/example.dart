@@ -19,4 +19,5 @@ main() {
   TemplateElement.syntax['fancy'] = new FancySyntax(globals: globals);
 
   query('#test').model = john;
+  query('#test2').model = john;
 }

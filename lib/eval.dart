@@ -4,8 +4,11 @@
 
 library fancy_syntax.eval;
 
+import 'dart:async';
 import 'dart:collection';
 import 'dart:mirrors';
+
+import 'package:mdv_observe/mdv_observe.dart';
 
 import 'expression.dart';
 import 'filter.dart';
@@ -41,9 +44,13 @@ final _UNARY_OPERATORS = {
 /**
  * Evaluation [expr] in the context of [scope].
  */
-Object eval(Expression expr, Scope scope) {
-  var visitor = new _MirrorEvaluator(scope);
-  return visitor.visitExpression(expr);
+Object eval(Expression expr, Scope scope) => observe(expr, scope)._value;
+
+
+ExpressionObserver observe(Expression expr, Scope scope) {
+  var observer = new ObserverBuilder(scope).visit(expr);
+  new Updater(scope).visit(observer);
+  return observer;
 }
 
 /**
@@ -107,12 +114,6 @@ void assign(Expression expr, Object value, Scope scope) {
   }
 }
 
-class Comprehension {
-  final String identifier;
-  final Iterable iterable;
-  Comprehension(this.identifier, this.iterable);
-}
-
 /**
  * A mapping of names to objects. Scopes contain a set of named [variables] and
  * a single [model] object (which can be thought of as the "this" reference).
@@ -121,14 +122,15 @@ class Comprehension {
  * Scopes can be nested by giving them a [parent]. If a name in not found in a
  * Scope, it will look for it in it's parent.
  */
-class Scope {
+class Scope extends Object {
   final Scope parent;
   final Object model;
-  final Map<String, Object> variables;
+  // TODO(justinfagnani): disallow adding/removing names
+  final ObservableMap<String, Object> _variables;
   InstanceMirror __modelMirror;
 
-  Scope({this.model, Map<String, Object> variables, this.parent})
-      : variables = (variables == null) ? {} : variables;
+  Scope({this.model, Map<String, Object> variables: const {}, this.parent})
+      : _variables = new ObservableMap.from(variables);
 
   InstanceMirror get _modelMirror {
     if (__modelMirror != null) return __modelMirror;
@@ -137,8 +139,8 @@ class Scope {
   }
 
   Object operator[](String name) {
-    if (variables.containsKey(name)) {
-      return variables[name];
+    if (_variables.containsKey(name)) {
+      return _variables[name];
     } else if (model != null) {
       var symbol = new Symbol(name);
       var classMirror = _modelMirror.type;
@@ -152,89 +154,328 @@ class Scope {
     if (parent != null) {
       return parent[name];
     } else {
-      throw new EvalException("variable not found: $name");
+      throw new EvalException("variable not found: $name in $hashCode");
+    }
+  }
+
+  Object ownerOf(String name) {
+    if (_variables.containsKey(name)) {
+      return _variables;
+    } else {
+      var symbol = new Symbol(name);
+      var classMirror = _modelMirror.type;
+      if (classMirror.variables.containsKey(symbol) ||
+          classMirror.getters.containsKey(symbol) ||
+          classMirror.methods.containsKey(symbol)) {
+        return model;
+      }
+    }
+    if (parent != null) {
+      return parent.ownerOf(name);
     }
   }
 }
 
-/**
- * Evaluates an expression.
- */
-class _MirrorEvaluator extends Visitor {
+abstract class ExpressionObserver<E extends Expression> implements Expression {
+  final E _expr;
+  ExpressionObserver _parent;
+
+  StreamSubscription _subscription;
+  Object _value;
+
+  StreamController _controller = new StreamController.broadcast();
+  Stream get onUpdate => _controller.stream;
+
+  ExpressionObserver(this._expr);
+
+  Object get currentValue => _value;
+
+  update(Scope scope) => _updateSelf(scope);
+
+  _updateSelf(Scope scope) {}
+
+  _invalidate(Scope scope) {
+    _observe(scope);
+    if (_parent != null) {
+      _parent._invalidate(scope);
+    }
+  }
+
+  _observe(Scope scope) {
+    // unobserve last value
+    if (_subscription != null) {
+      _subscription.cancel();
+      _subscription = null;
+    }
+
+    var _oldValue = _value;
+
+    // evaluate
+    _updateSelf(scope);
+
+    if (!identical(_value, _oldValue)) {
+      _controller.add(_value);
+    }
+  }
+
+  String toString() => _expr.toString();
+}
+
+class Updater extends RecursiveVisitor<ExpressionObserver> {
   final Scope scope;
 
-  _MirrorEvaluator(this.scope);
+  Updater(this.scope);
 
-  visitExpression(Expression e) => visit(e);
-
-  visitEmptyExpression(EmptyExpression e) => scope.model;
-
-  visitParenthesizedExpression(ParenthesizedExpression e) => visit(e.expr);
-
-  visitInExpression(InExpression c) {
-    Identifier identifier = c.left;
-    var iterable = visit(c.right);
-    if (iterable is! Iterable) {
-      throw new EvalException("right side of 'in' is not an iterator");
-    }
-
-    return new Comprehension(identifier.value, iterable);
+  visitExpression(ExpressionObserver e) {
+    e._observe(scope);
   }
+
+  visitInExpression(InObserver c) {
+    visit(c.right);
+    visitExpression(c);
+  }
+}
+
+class ObserverBuilder extends Visitor {
+  final Scope scope;
+  final Queue parents = new Queue();
+
+  ObserverBuilder(this.scope);
+
+  visitEmptyExpression(EmptyExpression e) => new EmptyObserver(e);
+
+  visitParenthesizedExpression(ParenthesizedExpression e) => visit(e.child);
 
   visitInvoke(Invoke i) {
-    var args = (i.arguments == null)
-        ? []
-        : i.arguments.map((a) => a.accept(this)).toList(growable: false);
     var receiver = visit(i.receiver);
-    if (i.method == null) {
-      if (i.isGetter) {
-        return receiver;
-      } else {
-        assert(receiver is Function);
-        return _call(receiver, args);
-      }
-    } else {
-      // special case [] because we don't need mirrors
-      if (i.method == '[]') {
-        assert(args.length == 1);
-        return receiver[args[0]];
-      } else {
-        var mirror = reflect(receiver);
-        return (i.isGetter)
-            ? mirror.getField(new Symbol(i.method)).reflectee
-            : mirror.invoke(new Symbol(i.method), args, null).reflectee;
-      }
-    }
+    var args = (i.arguments == null)
+        ? null
+        : i.arguments.map((a) => visit(a)).toList(growable: false);
+    var invoke =  new InvokeObserver(i, receiver, args);
+    receiver._parent = invoke;
+    if (args != null) args.forEach((a) => a._parent = invoke);
+    return invoke;
   }
 
-  // This will only be called at the top level of an expression, all other
-  // identifiers will be stored as the method of an Invoke node.
-  visitIdentifier(Identifier e) => scope[e.value];
+  visitLiteral(Literal l) => new LiteralObserver(l);
 
-  visitLiteral(Literal l) => l.value;
+  visitIdentifier(Identifier i) => new IdentifierObserver(i);
 
   visitBinaryOperator(BinaryOperator o) {
     var left = visit(o.left);
     var right = visit(o.right);
-    var f = _BINARY_OPERATORS[o.operator];
-    // TODO(justin): type coercion
-    return f(left, right);
+    var binary = new BinaryObserver(o, left, right);
+    left._parent = binary;
+    right._parent = binary;
+    return binary;
   }
 
   visitUnaryOperator(UnaryOperator o) {
-    var e = visit(o.expr);
-    var f = _UNARY_OPERATORS[o.operator];
-    // TODO(justin): type coercion
-    return f(e);
+    var expr = visit(o.child);
+    var unary = new UnaryObserver(o, expr);
+    expr._parent = unary;
+    return unary;
+  }
+
+  visitInExpression(InExpression i) {
+    // don't visit the left. It's an identifier, but we don't want to evaluate
+    // it, we just want to add it to the comprehension object
+    var left = visit(i.left);
+    var right = visit(i.right);
+    var inexpr = new InObserver(i, left, right);
+    right._parent = inexpr;
+    return inexpr;
   }
 }
 
-_call(dynamic receiver, List args) {
+class EmptyObserver extends ExpressionObserver<EmptyExpression>
+    implements EmptyExpression {
+
+  EmptyObserver(EmptyExpression value) : super(value);
+
+  _updateSelf(Scope scope) {
+    _value = scope.model;
+    // TODO(justin): listen for scope.model changes?
+  }
+
+  accept(Visitor v) => v.visitEmptyExpression(this);
+}
+
+class LiteralObserver extends ExpressionObserver<Literal> implements Literal {
+
+  LiteralObserver(Literal value) : super(value);
+
+  dynamic get value => _expr.value;
+
+  _updateSelf(Scope scope) {
+    _value = _expr.value;
+  }
+
+  accept(Visitor v) => v.visitLiteral(this);
+}
+
+class IdentifierObserver extends ExpressionObserver<Identifier>
+    implements Identifier {
+
+  IdentifierObserver(Identifier value) : super(value);
+
+  dynamic get value => _expr.value;
+
+  _updateSelf(Scope scope) {
+    _value = scope[_expr.value];
+
+    var owner = scope.ownerOf(_expr.value);
+    if (owner is Observable) {
+      _subscription = (owner as Observable).changes.listen(
+          (List<ChangeRecord> changes) {
+            var symbol = new Symbol(_expr.value);
+            if (changes.any((c) => c.changes(symbol))) {
+              _invalidate(scope);
+            }
+          });
+    }
+  }
+
+  accept(Visitor v) => v.visitIdentifier(this);
+}
+
+class ParenthesizedObserver extends ExpressionObserver<ParenthesizedExpression>
+    implements ParenthesizedExpression {
+  final ExpressionObserver child;
+
+  ParenthesizedObserver(ExpressionObserver expr, this.child) : super(expr);
+
+
+  _updateSelf(Scope scope) {
+    _value = child._value;
+  }
+
+  accept(Visitor v) => v.visitParenthesizedExpression(this);
+}
+
+class UnaryObserver extends ExpressionObserver<UnaryOperator>
+    implements UnaryOperator {
+  final ExpressionObserver child;
+
+  UnaryObserver(UnaryOperator expr, this.child) : super(expr);
+
+  String get operator => _expr.operator;
+
+  _updateSelf(Scope scope) {
+    var f = _UNARY_OPERATORS[_expr.operator];
+    // TODO(justin): type coercion
+    _value = f(child._value);
+  }
+
+  accept(Visitor v) => v.visitUnaryOperator(this);
+}
+
+class BinaryObserver extends ExpressionObserver<BinaryOperator>
+    implements BinaryOperator {
+
+  final ExpressionObserver left;
+  final ExpressionObserver right;
+
+  BinaryObserver(BinaryOperator expr, this.left, this.right)
+      : super(expr);
+
+  String get operator => _expr.operator;
+
+  _updateSelf(Scope scope) {
+    var f = _BINARY_OPERATORS[_expr.operator];
+    // TODO(justin): type coercion
+    _value = f(left._value, right._value);
+  }
+
+  accept(Visitor v) => v.visitBinaryOperator(this);
+
+}
+
+class InvokeObserver extends ExpressionObserver<Invoke> implements Invoke {
+  final ExpressionObserver receiver;
+  List<ExpressionObserver> arguments;
+
+  InvokeObserver(Expression expr, this.receiver, [this.arguments])
+      : super(expr);
+
+  bool get isGetter => _expr.isGetter;
+
+  String get method => _expr.method;
+
+  _updateSelf(Scope scope) {
+    var args = (arguments == null)
+        ? []
+        : arguments.map((a) => a._value)
+            .toList(growable: false);
+    var receiverValue = receiver._value;
+    if (_expr.method == null) {
+      if (_expr.isGetter) {
+        _value = receiverValue;
+      } else {
+        assert(receiverValue is Function);
+        _value = call(receiverValue, args);
+      }
+    } else {
+      // special case [] because we don't need mirrors
+      if (_expr.method == '[]') {
+        assert(args.length == 1);
+        _value = receiverValue[args[0]];
+        // TODO: listen to map changes
+      } else {
+        var mirror = reflect(receiverValue);
+        var symbol = new Symbol(_expr.method);
+        _value = (_expr.isGetter)
+            ? mirror.getField(symbol).reflectee
+            : mirror.invoke(symbol, args, null).reflectee;
+        if (_value is Observable) {
+          _subscription = (_value as Observable).changes.listen(
+              (List<ChangeRecord> changes) {
+                if (changes.any((c) => c.changes(symbol))) {
+                  _invalidate(scope);
+                }
+              });
+        }
+      }
+    }
+  }
+
+  accept(Visitor v) => v.visitInvoke(this);
+}
+
+class InObserver extends ExpressionObserver<InExpression>
+    implements InExpression {
+  IdentifierObserver left; // not an observer because we don't want to lookup the ident
+  ExpressionObserver right;
+
+  InObserver(Expression expr, this.left, this.right) : super(expr);
+
+  _updateSelf(Scope scope) {
+    Identifier identifier = left;
+    var iterable = right._value;
+    if (iterable is! Iterable) {
+      throw new EvalException("right side of 'in' is not an iterator");
+    }
+    _value = new Comprehension(identifier.value, iterable);
+  }
+
+  accept(Visitor v) => v.visitInExpression(this);
+}
+
+call(dynamic receiver, List args) {
   if (receiver is Method) {
     return receiver.mirror.invoke(receiver.symbol, args, null).reflectee;
   } else {
     return Function.apply(receiver, args, null);
   }
+}
+
+/**
+ * A comprehension declaration ("a in b").
+ */
+class Comprehension {
+  final String identifier;
+  final Iterable iterable;
+  Comprehension(this.identifier, this.iterable);
 }
 
 /**

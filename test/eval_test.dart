@@ -8,15 +8,18 @@ import 'package:fancy_syntax/eval.dart';
 import 'package:fancy_syntax/filter.dart';
 import 'package:fancy_syntax/parser.dart';
 import 'package:unittest/unittest.dart';
+import 'package:unittest/html_enhanced_config.dart';
 
 Object evalString(String s, [Object model, Map vars]) =>
     eval(new Parser(s).parse(), new Scope(model: model, variables: vars));
 
-expectEval(String s, dynamic matcher, [Object model, Map vars]) =>
+expectEval(String s, dynamic matcher, [Object model, Map vars = const {}]) =>
     expect(eval(new Parser(s).parse(), new Scope(model: model, variables: vars)),
         matcher, reason: s);
 
 main() {
+  useHtmlEnhancedConfiguration();
+
   group('eval', () {
     test('should return the target for an empty expression', () {
       expectEval('', 'target', 'target');

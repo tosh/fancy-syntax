@@ -13,12 +13,15 @@ const _UNARY_OPERATORS = const ['+', '-', '!'];
 Expression parse(String expr) => new Parser(expr).parse();
 
 class Parser {
+  final AstFactory _astFactory;
   final Tokenizer _tokenizer;
   List<Token> _tokens;
   Iterator _iterator;
   Token _token;
 
-  Parser(String input) : _tokenizer = new Tokenizer(input);
+  Parser(String input, {AstFactory astFactory})
+      : _tokenizer = new Tokenizer(input),
+        _astFactory = (astFactory == null) ? new AstFactory() : astFactory;
 
   Expression parse() {
     _tokens = _tokenizer.tokenize();
@@ -36,7 +39,7 @@ class Parser {
   }
 
   Expression _parseExpression() {
-    if (_token == null) return new EmptyExpression();
+    if (_token == null) return _astFactory.empty();
     var expr = _parseUnary();
     return (expr == null) ? null : _parsePrecedence(expr, 0);
   }
@@ -50,11 +53,11 @@ class Parser {
       if (_token.kind == GROUPER_TOKEN) {
         if (_token.value == '(') {
           var args = _parseArguments();
-          left = new Invoke(left, null, args);
+          left = _astFactory.invoke(left, null, args);
         } else if (_token.value == '[') {
           var indexExpr = _parseIndex();
           var args = indexExpr == null ? [] : [indexExpr];
-          left = new Invoke(left, '[]', args);
+          left = _astFactory.invoke(left, '[]', args);
         } else {
           break;
         }
@@ -76,10 +79,10 @@ class Parser {
 
   Invoke _makeInvoke(left, right) {
     if (right is Identifier) {
-      return new Invoke(left, right.value);
+      return _astFactory.invoke(left, right.value);
     } else if (right is Invoke && right.receiver is Identifier) {
       Identifier method = right.receiver;
-      return new Invoke(left, method.value, right.arguments);
+      return _astFactory.invoke(left, method.value, right.arguments);
     } else {
       throw new ParseException("expected identifier: $right");
     }
@@ -96,7 +99,7 @@ class Parser {
         && _token.precedence > op.precedence) {
       right = _parsePrecedence(right, _token.precedence);
     }
-    return new BinaryOperator(left, op.value, right);
+    return _astFactory.binary(left, op.value, right);
   }
 
   Expression _parseUnary() {
@@ -110,12 +113,12 @@ class Parser {
           return _parseDecimal(value);
         } else {
           var expr = _parsePrecedence(_parsePrimary(), POSTFIX_PRECEDENCE);
-          return new UnaryOperator(value, expr);
+          return _astFactory.unary(value, expr);
         }
       } else if (value == '!') {
         _advance();
         var expr = _parsePrecedence(_parsePrimary(), POSTFIX_PRECEDENCE);
-        return new UnaryOperator(value, expr);
+        return _astFactory.unary(value, expr);
       }
     }
     return _parsePrimary();
@@ -155,31 +158,31 @@ class Parser {
     }
     _advance();
     var right = _parseExpression();
-    return new InExpression(left, right);
+    return _astFactory.inExpr(left, right);
   }
 
   Expression _parseInvokeOrIdentifier() {
     if (_token.value == 'true') {
       _advance();
-      return new Literal<bool>(true);
+      return _astFactory.literal(true);
     }
     if (_token.value == 'false') {
       _advance();
-      return new Literal<bool>(false);
+      return _astFactory.literal(false);
     }
     var identifier = _parseIdentifier();
     var args = _parseArguments();
     if (args == null) {
       return identifier;
     } else {
-      return new Invoke(identifier, null, args);
+      return _astFactory.invoke(identifier, null, args);
     }
   }
 
   Invoke _parseInvoke() {
     var identifier = _parseIdentifier();
     var args = _parseArguments();
-    return new Invoke(null, identifier, args);
+    return _astFactory.invoke(null, identifier, args);
   }
 
   Identifier _parseIdentifier() {
@@ -188,7 +191,7 @@ class Parser {
     }
     var value = _token.value;
     _advance();
-    return new Identifier(value);
+    return _astFactory.identifier(value);
   }
 
   List<Expression> _parseArguments() {
@@ -222,23 +225,23 @@ class Parser {
     _advance();
     var expr = _parseExpression();
     _advance(GROUPER_TOKEN, ')');
-    return new ParenthesizedExpression(expr);
+    return _astFactory.parenthesized(expr);
   }
 
   Literal<String> _parseString() {
-    var value = new Literal<String>(_token.value);
+    var value = _astFactory.literal(_token.value);
     _advance();
     return value;
   }
 
   Literal<int> _parseInteger([String prefix = '']) {
-    var value = new Literal<int>(int.parse('$prefix${_token.value}'));
+    var value = _astFactory.literal(int.parse('$prefix${_token.value}'));
     _advance();
     return value;
   }
 
   Literal<double> _parseDecimal([String prefix = '']) {
-    var value = new Literal<double>(double.parse('$prefix${_token.value}'));
+    var value = _astFactory.literal(double.parse('$prefix${_token.value}'));
     _advance();
     return value;
   }

@@ -19,6 +19,28 @@ Invoke invoke(Expression e, String m, [List<Expression> a]) =>
     new Invoke(e, m, a);
 InExpression inExpr(Expression l, Expression r) => new InExpression(l, r);
 
+
+class AstFactory {
+  EmptyExpression empty() => new EmptyExpression();
+
+  Literal literal(v) => new Literal(v);
+
+  Identifier identifier(String v) => new Identifier(v);
+
+  ParenthesizedExpression parenthesized(Expression e) =>
+      new ParenthesizedExpression(e);
+
+  UnaryOperator unary(String op, Expression e) => new UnaryOperator(op, e);
+
+  BinaryOperator binary(Expression l, String op, Expression r) =>
+      new BinaryOperator(l, op, r);
+
+  Invoke invoke(Expression e, String m, [List<Expression> a]) =>
+      new Invoke(e, m, a);
+
+  InExpression inExpr(Expression l, Expression r) => new InExpression(l, r);
+}
+
 /// Base class for all expressions
 abstract class Expression {
   accept(Visitor v);
@@ -45,17 +67,17 @@ class Literal<T> extends Expression {
 
 
 class ParenthesizedExpression extends Expression {
-  final Expression expr;
+  final Expression child;
 
-  ParenthesizedExpression(this.expr);
+  ParenthesizedExpression(this.child);
 
   accept(Visitor v) => v.visitParenthesizedExpression(this);
 
-  String toString() => '($expr)';
+  String toString() => '($child)';
 
-  bool operator ==(o) => o is ParenthesizedExpression && o.expr == expr;
+  bool operator ==(o) => o is ParenthesizedExpression && o.child == child;
 
-  int get hashCode => expr.hashCode;
+  int get hashCode => child.hashCode;
 }
 
 class Identifier extends Expression {
@@ -74,16 +96,16 @@ class Identifier extends Expression {
 
 class UnaryOperator extends Expression {
   final String operator;
-  final Expression expr;
+  final Expression child;
 
-  UnaryOperator(this.operator, this.expr);
+  UnaryOperator(this.operator, this.child);
 
   accept(Visitor v) => v.visitUnaryOperator(this);
 
-  String toString() => '$operator $expr';
+  String toString() => '$operator $child';
 
   bool operator ==(o) => o is UnaryOperator && o.operator == operator
-      && o.expr == expr;
+      && o.child == child;
 }
 
 class BinaryOperator extends Expression {
