@@ -363,8 +363,11 @@ class UnaryObserver extends ExpressionObserver<UnaryOperator>
 
   _updateSelf(Scope scope) {
     var f = _UNARY_OPERATORS[_expr.operator];
-    // TODO(justin): type coercion
-    _value = f(child._value);
+    if (operator == '!') {
+      _value = f(_toBool(child._value));
+    } else {
+      _value = (child._value == null) ? null : f(child._value);
+    }
   }
 
   accept(Visitor v) => v.visitUnaryOperator(this);
@@ -382,9 +385,13 @@ class BinaryObserver extends ExpressionObserver<BinaryOperator>
   String get operator => _expr.operator;
 
   _updateSelf(Scope scope) {
-    var f = _BINARY_OPERATORS[_expr.operator];
-    // TODO(justin): type coercion
-    _value = f(left._value, right._value);
+    var f = _BINARY_OPERATORS[operator];
+    if (operator == '&&' || operator == '||') {
+      _value = f(_toBool(left._value), _toBool(right._value));
+    } else {
+      _value = (left._value == null || right._value == null)
+          ? null : f(left._value, right._value);
+    }
   }
 
   accept(Visitor v) => v.visitBinaryOperator(this);
@@ -408,6 +415,9 @@ class InvokeObserver extends ExpressionObserver<Invoke> implements Invoke {
         : arguments.map((a) => a._value)
             .toList(growable: false);
     var receiverValue = receiver._value;
+    if (receiverValue == null) {
+      return null;
+    }
     if (_expr.method == null) {
       if (_expr.isGetter) {
         _value = receiverValue;
@@ -460,6 +470,8 @@ class InObserver extends ExpressionObserver<InExpression>
 
   accept(Visitor v) => v.visitInExpression(this);
 }
+
+_toBool(v) => (v == null) ? false : v;
 
 call(dynamic receiver, List args) {
   if (receiver is Method) {

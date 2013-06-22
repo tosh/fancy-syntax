@@ -21,8 +21,8 @@ main() {
   useHtmlEnhancedConfiguration();
 
   group('eval', () {
-    test('should return the target for an empty expression', () {
-      expectEval('', 'target', 'target');
+    test('should return the model for an empty expression', () {
+      expectEval('', 'model', 'model');
     });
 
     test('should return a literal int', () {
@@ -88,7 +88,7 @@ main() {
       expectEval('false && false', false);
     });
 
-    test('should invoke a method on the target', () {
+    test('should invoke a method on the model', () {
       var foo = new Foo(name: 'foo', age: 2);
       expectEval('x()', foo.x(), foo);
       expectEval('name', foo.name, foo);
@@ -137,6 +137,37 @@ main() {
       expectEval('a | parseInt(8)', 34, null, topLevel);
       expectEval('a | parseInt() | add(10)', 52, null, topLevel);
     });
+
+    test('should return null if the receiver of a method is null', () {
+      expectEval('a.b', null, null, {'a': null});
+      expectEval('a.b()', null, null, {'a': null});
+    });
+
+    test('should return null if null is invoked', () {
+      expectEval('a()', null, null, {'a': null});
+    });
+
+    test('should return null if an operand is null', () {
+      expectEval('a + b', null, null, {'a': null, 'b': null});
+      expectEval('+a', null, null, {'a': null});
+    });
+
+    test('should treat null as false', () {
+      expectEval('!a', true, null, {'a': null});
+
+      expectEval('a && b', false, null, {'a': null, 'b': true});
+      expectEval('a && b', false, null, {'a': true, 'b': null});
+      expectEval('a && b', false, null, {'a': null, 'b': false});
+      expectEval('a && b', false, null, {'a': false, 'b': null});
+      expectEval('a && b', false, null, {'a': null, 'b': null});
+
+      expectEval('a || b', true, null, {'a': null, 'b': true});
+      expectEval('a || b', true, null, {'a': true, 'b': null});
+      expectEval('a || b', false, null, {'a': null, 'b': false});
+      expectEval('a || b', false, null, {'a': false, 'b': null});
+      expectEval('a || b', false, null, {'a': null, 'b': null});
+    });
+
   });
 
   group('assign', () {
