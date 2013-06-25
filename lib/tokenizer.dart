@@ -44,14 +44,17 @@ const int _r = 114;
 const int _t = 116;
 const int _v = 118;
 const int _z = 122;
+const int _OPEN_CURLY_BRACKET = 123;
 const int _BAR = 124;
+const int _CLOSE_CURLY_BRACKET = 125;
 const int _NBSP = 160;
 
 const _OPERATORS = const [_PLUS, _MINUS, _STAR, _SLASH, _BANG, _AMPERSAND,
                           /*_COMMA,*/ _LT, _EQ, _GT, _QUESTION, _CARET, _BAR];
 
 const _GROUPERS = const [_OPEN_PAREN, _CLOSE_PAREN,
-                         _OPEN_SQUARE_BRACKET, _CLOSE_SQUARE_BRACKET];
+                         _OPEN_SQUARE_BRACKET, _CLOSE_SQUARE_BRACKET,
+                         _OPEN_CURLY_BRACKET, _CLOSE_CURLY_BRACKET];
 
 const _TWO_CHAR_OPS = const ['==', '!=', '<=', '>=', '||', '&&'];
 
@@ -63,6 +66,7 @@ const _PRECEDENCE = const {
   ',':  0,
   ')':  0,
   ']':  0,
+  '}':  0, // ?
   '?':  1,
   '||': 2,
   '&&': 3,
@@ -93,6 +97,7 @@ const _PRECEDENCE = const {
   '(':  11,
   '[':  11,
   '.':  11,
+  '{': 11, //not sure this is correct
 };
 
 const POSTFIX_PRECEDENCE = 11;
@@ -101,11 +106,12 @@ const int STRING_TOKEN = 1;
 const int IDENTIFIER_TOKEN = 2;
 const int DOT_TOKEN = 3;
 const int COMMA_TOKEN = 4;
-const int INTEGER_TOKEN = 5;
-const int DECIMAL_TOKEN = 6;
-const int OPERATOR_TOKEN = 7;
-const int GROUPER_TOKEN = 8;
-const int KEYWORD_TOKEN = 9;
+const int COLON_TOKEN = 5;
+const int INTEGER_TOKEN = 6;
+const int DECIMAL_TOKEN = 7;
+const int OPERATOR_TOKEN = 8;
+const int GROUPER_TOKEN = 9;
+const int KEYWORD_TOKEN = 10;
 
 bool isWhitespace(int next) => next == _SPACE || next == _TAB || next == _NBSP;
 
@@ -173,6 +179,8 @@ class Tokenizer {
         tokenizeDot();
       } else if (_next == _COMMA) {
         tokenizeComma();
+      } else if (_next == _COLON) {
+        tokenizeColon();
       } else if (isOperator(_next)) {
         tokenizeOperator();
       } else if (isGrouper(_next)) {
@@ -242,6 +250,11 @@ class Tokenizer {
   tokenizeComma() {
     _advance();
     _tokens.add(new Token(COMMA_TOKEN, ','));
+  }
+
+  tokenizeColon() {
+    _advance();
+    _tokens.add(new Token(COLON_TOKEN, ':'));
   }
 
   tokenizeFraction() {

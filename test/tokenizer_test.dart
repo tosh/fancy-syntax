@@ -66,22 +66,33 @@ main() {
     });
 
     test('should tokenize groups', () {
-      expectTokens('a(b)[]', [
+      expectTokens('a(b)[]{}', [
           t(IDENTIFIER_TOKEN, 'a'),
           t(GROUPER_TOKEN, '('),
           t(IDENTIFIER_TOKEN, 'b'),
           t(GROUPER_TOKEN, ')'),
           t(GROUPER_TOKEN, '['),
-          t(GROUPER_TOKEN, ']')]);
+          t(GROUPER_TOKEN, ']'),
+          t(GROUPER_TOKEN, '{'),
+          t(GROUPER_TOKEN, '}')]);
     });
 
-    test('should tokenize lists', () {
+    test('should tokenize argument lists', () {
       expectTokens('(a, b)', [
           t(GROUPER_TOKEN, '('),
           t(IDENTIFIER_TOKEN, 'a'),
           t(COMMA_TOKEN, ','),
           t(IDENTIFIER_TOKEN, 'b'),
           t(GROUPER_TOKEN, ')')]);
+    });
+
+    test('should tokenize maps', () {
+      expectTokens("{'a': b}", [
+          t(GROUPER_TOKEN, '{'),
+          t(STRING_TOKEN, 'a'),
+          t(COLON_TOKEN, ':'),
+          t(IDENTIFIER_TOKEN, 'b'),
+          t(GROUPER_TOKEN, '}')]);
     });
 
     test('should tokenize integers', () {

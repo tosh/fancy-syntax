@@ -10,6 +10,9 @@ import 'visitor.dart';
 
 EmptyExpression empty() => new EmptyExpression();
 Literal literal(v) => new Literal(v);
+MapLiteral mapLiteral(List<MapLiteralEntry> entries) => new MapLiteral(entries);
+MapLiteralEntry mapLiteralEntry(Literal key, Expression value) =>
+    new MapLiteralEntry(key, value);
 Identifier ident(String v) => new Identifier(v);
 ParenthesizedExpression paren(Expression e) => new ParenthesizedExpression(e);
 UnaryOperator unary(String op, Expression e) => new UnaryOperator(op, e);
@@ -24,6 +27,12 @@ class AstFactory {
   EmptyExpression empty() => new EmptyExpression();
 
   Literal literal(v) => new Literal(v);
+
+  MapLiteral mapLiteral(List<MapLiteralEntry> entries) =>
+      new MapLiteral(entries);
+
+  MapLiteralEntry mapLiteralEntry(Literal key, Expression value) =>
+      new MapLiteralEntry(key, value);
 
   Identifier identifier(String v) => new Identifier(v);
 
@@ -65,6 +74,31 @@ class Literal<T> extends Expression {
   int get hashCode => value.hashCode;
 }
 
+class MapLiteral extends Expression {
+  final List<MapLiteralEntry> entries;
+
+  MapLiteral(this.entries);
+
+  accept(Visitor v) => v.visitMapLiteral(this);
+
+  String toString() => "{$entries}";
+
+  bool operator ==(o) => o is MapLiteral && _listEquals(o.entries, entries);
+}
+
+class MapLiteralEntry extends Expression {
+  final Literal key;
+  final Expression entryValue;
+
+  MapLiteralEntry(this.key, this.entryValue);
+
+  accept(Visitor v) => v.visitMapLiteralEntry(this);
+
+  String toString() => "$key: $entryValue";
+
+  bool operator ==(o) => o is MapLiteralEntry && o.key == key
+      && o.entryValue == entryValue;
+}
 
 class ParenthesizedExpression extends Expression {
   final Expression child;

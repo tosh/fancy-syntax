@@ -174,5 +174,26 @@ main() {
       expect(() => parse('a.in'), throwsException);
     });
 
+    test('should parse map literals', () {
+      expectParse("{'a': 1}",
+          mapLiteral([mapLiteralEntry(literal('a'), literal(1))]));
+      expectParse("{'a': 1, 'b': 2 + 3}",
+          mapLiteral([
+              mapLiteralEntry(literal('a'), literal(1)),
+              mapLiteralEntry(literal('b'),
+                  binary(literal(2), '+', literal(3)))]));
+      expectParse("{'a': foo()}",
+          mapLiteral([mapLiteralEntry(
+              literal('a'), invoke(ident('foo'), null, []))]));
+      expectParse("{'a': foo('a')}",
+          mapLiteral([mapLiteralEntry(
+              literal('a'), invoke(ident('foo'), null, [literal('a')]))]));
+    });
+
+    test('should parse map literals with method calls', () {
+      expectParse("{'a': 1}.length",
+          invoke(mapLiteral([mapLiteralEntry(literal('a'), literal(1))]),
+              'length'));
+    });
   });
 }

@@ -33,7 +33,7 @@ class Parser {
   _advance([int kind, String value]) {
     if ((kind != null && _token.kind != kind)
         || (value != null && _token.value != value)) {
-      throw new ParseException("Expected $value");
+      throw new ParseException("Expected $value: $_token");
     }
     _token = _iterator.moveNext() ? _iterator.current : null;
   }
@@ -142,12 +142,34 @@ class Parser {
       case GROUPER_TOKEN:
         if (_token.value == '(') {
           return _parseParenthesized();
+        } else if (_token.value == '{') {
+          return _parseMapLiteral();
         }
         return null;
         break;
       default:
         return null;
     }
+  }
+
+  MapLiteral _parseMapLiteral() {
+    var entries = [];
+    do {
+      _advance();
+      if (_token.kind == GROUPER_TOKEN && _token.value == '}') {
+        break;
+      }
+      entries.add(_parseMapLiteralEntry());
+    } while(_token != null && _token.value == ',');
+    _advance(GROUPER_TOKEN, '}');
+    return new MapLiteral(entries);
+  }
+
+  MapLiteralEntry _parseMapLiteralEntry() {
+    var key = _parseString();
+    _advance(COLON_TOKEN, ':');
+    var value = _parseExpression();
+    return _astFactory.mapLiteralEntry(key, value);
   }
 
   InExpression _parseComprehension(Expression left) {
@@ -200,12 +222,12 @@ class Parser {
       do {
         _advance();
         if (_token.kind == GROUPER_TOKEN && _token.value == ')') {
-          _advance();
           break;
         }
         var expr = _parseExpression();
         args.add(expr);
       } while(_token != null && _token.value == ',');
+      _advance(GROUPER_TOKEN, ')');
       return args;
     }
     return null;

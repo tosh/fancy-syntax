@@ -276,7 +276,7 @@ class ObserverBuilder extends Visitor {
     var receiver = visit(i.receiver);
     var args = (i.arguments == null)
         ? null
-        : i.arguments.map((a) => visit(a)).toList(growable: false);
+        : i.arguments.map(visit).toList(growable: false);
     var invoke =  new InvokeObserver(i, receiver, args);
     receiver._parent = invoke;
     if (args != null) args.forEach((a) => a._parent = invoke);
@@ -284,6 +284,22 @@ class ObserverBuilder extends Visitor {
   }
 
   visitLiteral(Literal l) => new LiteralObserver(l);
+
+  visitMapLiteral(MapLiteral l) {
+    var entries = l.entries.map(visit).toList(growable: false);
+    var map = new MapLiteralObserver(l, entries);
+    entries.forEach((e) => e._parent = map);
+    return map;
+  }
+
+  visitMapLiteralEntry(MapLiteralEntry e) {
+    var key = visit(e.key);
+    var value = visit(e.entryValue);
+    var entry = new MapLiteralEntryObserver(e, key, value);
+    key._parent = entry;
+    value._parent = entry;
+    return entry;
+  }
 
   visitIdentifier(Identifier i) => new IdentifierObserver(i);
 
@@ -338,6 +354,33 @@ class LiteralObserver extends ExpressionObserver<Literal> implements Literal {
   }
 
   accept(Visitor v) => v.visitLiteral(this);
+}
+
+class MapLiteralObserver extends ExpressionObserver<MapLiteral>
+    implements MapLiteral {
+
+  final List<MapLiteralEntryObserver> entries;
+
+  MapLiteralObserver(MapLiteral value, this.entries) : super(value);
+
+  _updateSelf(Scope scope) {
+    _value = entries.fold(new Map(),
+        (m, e) => m..[e.key._value] = e.entryValue._value);
+  }
+
+  accept(Visitor v) => v.visitMapLiteral(this);
+}
+
+class MapLiteralEntryObserver extends ExpressionObserver<MapLiteralEntry>
+    implements MapLiteralEntry {
+
+  final LiteralObserver key;
+  final ExpressionObserver entryValue;
+
+  MapLiteralEntryObserver(MapLiteralEntry value, this.key, this.entryValue)
+      : super(value);
+
+  accept(Visitor v) => v.visitMapLiteralEntry(this);
 }
 
 class IdentifierObserver extends ExpressionObserver<Identifier>

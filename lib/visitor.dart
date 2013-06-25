@@ -13,6 +13,8 @@ abstract class Visitor<E extends Expression> {
   visitParenthesizedExpression(ParenthesizedExpression e);
   visitInvoke(Invoke i);
   visitLiteral(Literal l);
+  visitMapLiteral(MapLiteral l);
+  visitMapLiteralEntry(MapLiteralEntry l);
   visitIdentifier(Identifier i);
   visitBinaryOperator(BinaryOperator o);
   visitUnaryOperator(UnaryOperator o);
@@ -40,6 +42,19 @@ abstract class RecursiveVisitor<E> extends Visitor<E> {
   }
 
   visitLiteral(Literal l) => visitExpression(l);
+
+  visitMapLiteral(MapLiteral l) {
+    for (var e in l.entries) {
+      visit(e);
+    }
+    visitExpression(l);
+  }
+
+  visitMapLiteralEntry(MapLiteralEntry e) {
+    visit(e.key);
+    visit(e.entryValue);
+    visitExpression(e);
+  }
 
   visitIdentifier(Identifier i) => visitExpression(i);
 

@@ -47,6 +47,15 @@ main() {
       expectEval('false', false);
     });
 
+    test('should return a literal map', () {
+      expectEval('{"a": 1}', equals(new Map.from({'a': 1})));
+      expectEval('{"a": 1}', containsPair('a', 1));
+    });
+
+    test('should call methods on a literal map', () {
+      expectEval('{"a": 1}.length', 1);
+    });
+
     test('should evaluate unary operators', () {
       expectEval('+a', 2, null, {'a': 2});
       expectEval('-a', -2, null, {'a': 2});

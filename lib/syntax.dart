@@ -15,6 +15,17 @@ import 'expression.dart';
 import 'parser.dart';
 import 'visitor.dart';
 
+// TODO(justin): Investigate XSS protection
+Object _classAttributeConverter(v) =>
+    (v is Map) ? v.keys.where((k) => v[k] == true).join(' ') :
+    (v is Iterable) ? v.join(' ') :
+    v;
+
+Object _styleAttributeConverter(v) =>
+    (v is Map) ? v.keys.map((k) => '$k: ${v[k]}').join(';') :
+    (v is Iterable) ? v.join(';') :
+    v;
+
 class FancySyntax extends CustomBindingSyntax {
 
   final Map<String, Object> globals;
@@ -23,15 +34,18 @@ class FancySyntax extends CustomBindingSyntax {
       : globals = (globals == null) ? new Map<String, Object>() : globals;
 
   _Binding getBinding(model, String path, name, node) {
-    if (path != null) {
-      var expr = new Parser(path).parse();
-      if (model is! Scope) {
-        model = new Scope(model: model, variables: globals);
-      }
-      return new _Binding(expr, model);
-    } else {
-      return null;
+    if (path == null) return null;
+    var expr = new Parser(path).parse();
+    if (model is! Scope) {
+      model = new Scope(model: model, variables: globals);
     }
+    if (node is Element && name == "class") {
+      return new _Binding(expr, model, _classAttributeConverter);
+    }
+    if (node is Element && name == "style") {
+      return new _Binding(expr, model, _styleAttributeConverter);
+    }
+    return new _Binding(expr, model);
   }
 
   getInstanceModel(Element template, model) {
@@ -50,9 +64,11 @@ class _Binding extends Object with ObservableMixin {
 
   final Scope _scope;
   final ExpressionObserver _expr;
+  final _converter;
   var _value;
 
-  _Binding(Expression expr, Scope scope)
+
+  _Binding(Expression expr, Scope scope, [this._converter])
       : _expr = observe(expr, scope),
         _scope = scope {
     _expr.onUpdate.listen(_setValue);
@@ -68,7 +84,7 @@ class _Binding extends Object with ObservableMixin {
         return childScope;
       }).toList(growable: false);
     } else {
-      _value = v;
+      _value = (_converter == null) ? v : _converter(v);
     }
     notifyChange(new PropertyChangeRecord(_VALUE));
   }

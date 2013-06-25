@@ -8,6 +8,14 @@ BSD-style license that can be found in the LICENSE file.
 <html>
   <head>
     <title>example</title>
+    <style>
+      .jname {
+        background: #faa;
+      }
+      .fname {
+        border: solid 1px #88f;
+      }
+    </style>
   </head>
 
   <body>
@@ -26,10 +34,13 @@ BSD-style license that can be found in the LICENSE file.
         </ul>
         <ul>
           <template repeat="{{ people }}">
-            <li>{{ firstName }} {{ lastName }}</li>
+            <li class="{{ {'jname': firstName.startsWith('J'),
+                'fname': lastName.startsWith('F')} }}">
+              {{ firstName }} {{ lastName }}
+            </li>
             <ul>
               <template repeat="{{ item in items }}">
-                <li>{{ firstName }} {{ item }}</li>
+                <li checked?="{{ item == 'A'}}">{{ firstName }} {{ item }}</li>
               </template>
             </ul>
           </template>
