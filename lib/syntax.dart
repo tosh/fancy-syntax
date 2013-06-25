@@ -4,10 +4,12 @@
 
 library fancy_syntax;
 
+import 'dart:async';
 import 'dart:html';
 import 'dart:collection';
 import 'package:mdv_observe/mdv_observe.dart';
 
+import 'async.dart';
 import 'eval.dart';
 import 'expression.dart';
 import 'parser.dart';
@@ -22,13 +24,10 @@ class FancySyntax extends CustomBindingSyntax {
 
   _Binding getBinding(model, String path, name, node) {
     if (path != null) {
-      if (path.isEmpty) {
-        // avoid creating an unneccesary scope for the top-level template
-        return null;
-      } else if (model is! Scope) {
+      var expr = new Parser(path).parse();
+      if (model is! Scope) {
         model = new Scope(model: model, variables: globals);
       }
-      var expr = new Parser(path).parse();
       return new _Binding(expr, model);
     } else {
       return null;

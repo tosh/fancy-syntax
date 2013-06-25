@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <!--
-Copyright (c) 2012, the Dart project authors.  Please see the AUTHORS file
+Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS file
 for details. All rights reserved. Use of this source code is governed by a
 BSD-style license that can be found in the LICENSE file.
 -->
@@ -17,13 +17,10 @@ BSD-style license that can be found in the LICENSE file.
       <label> last name: <input value="{{ lastName }}"></label>
       <div>Hello {{ getFullName() }}!</div>
       <div>{{ firstName }} {{ lastName }}</div>
-      <template bind="{{ firstName }}">
-        <div>first name: {{ }}</div>
-      </template>
       <div>
         <h2>Iteration</h2>
         <ul>
-          <template repeat="{{ item in items }}">
+          <template repeat="{{ item in items.take(2) }}">
             <li>{{ item }}</li>
           </template>
         </ul>

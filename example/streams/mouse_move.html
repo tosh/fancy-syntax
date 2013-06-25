@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<!--
+Copyright (c) 2013, the Dart project authors.  Please see the AUTHORS file
+for details. All rights reserved. Use of this source code is governed by a
+BSD-style license that can be found in the LICENSE file.
+-->
+
+<html>
+  <body>
+    <template id="test" bind="{{ mouse }}" syntax="fancy">
+      ({{ value.offsetX }}, {{ value.offsetY }})
+    </template>
+    <script type="application/dart">
+      import 'dart:html';
+      import 'package:fancy_syntax/syntax.dart';
+
+      main() {
+        var globals = {
+          'mouse': document.onMouseMove,
+        };
+
+        TemplateElement.syntax['fancy'] = new FancySyntax(globals: globals);
+
+        query('#test').model = null;
+      }
+    </script>
+    <script src="packages/browser/dart.js"></script>
+  </body>
+</html>

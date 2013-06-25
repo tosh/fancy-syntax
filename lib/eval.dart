@@ -10,10 +10,12 @@ import 'dart:mirrors';
 
 import 'package:mdv_observe/mdv_observe.dart';
 
+import 'async.dart';
 import 'expression.dart';
 import 'filter.dart';
 import 'visitor.dart';
 import 'parser.dart';
+import 'src/mirrors.dart';
 
 final _BINARY_OPERATORS = {
   '+':  (a, b) => a + b,
@@ -40,6 +42,8 @@ final _UNARY_OPERATORS = {
   '-': (a) => -a,
   '!': (a) => !a,
 };
+
+final _BOOLEAN_OPERATORS = ['!', '||', '&&'];
 
 /**
  * Evaluation [expr] in the context of [scope].
@@ -140,19 +144,20 @@ class Scope extends Object {
 
   Object operator[](String name) {
     if (_variables.containsKey(name)) {
-      return _variables[name];
+      return _convert(_variables[name]);
     } else if (model != null) {
       var symbol = new Symbol(name);
       var classMirror = _modelMirror.type;
-      if (classMirror.variables.containsKey(symbol) ||
-          classMirror.getters.containsKey(symbol)) {
-        return _modelMirror.getField(symbol).reflectee;
-      } else if (classMirror.methods.containsKey(symbol)) {
+      var memberMirror = getMemberMirror(classMirror, symbol);
+      if (memberMirror is VariableMirror ||
+          (memberMirror is MethodMirror && memberMirror.isGetter)) {
+        return _convert(_modelMirror.getField(symbol).reflectee);
+      } else if (memberMirror is MethodMirror) {
         return new Method(_modelMirror, symbol);
       }
     }
     if (parent != null) {
-      return parent[name];
+      return _convert(parent[name]);
     } else {
       throw new EvalException("variable not found: $name in $hashCode");
     }
@@ -164,9 +169,7 @@ class Scope extends Object {
     } else {
       var symbol = new Symbol(name);
       var classMirror = _modelMirror.type;
-      if (classMirror.variables.containsKey(symbol) ||
-          classMirror.getters.containsKey(symbol) ||
-          classMirror.methods.containsKey(symbol)) {
+      if (getMemberMirror(classMirror, symbol) != null) {
         return model;
       }
     }
@@ -174,6 +177,29 @@ class Scope extends Object {
       return parent.ownerOf(name);
     }
   }
+
+  bool contains(String name) {
+    if (_variables.containsKey(name)) {
+      return true;
+    } else {
+      var symbol = new Symbol(name);
+      var classMirror = _modelMirror.type;
+      if (getMemberMirror(classMirror, symbol) != null) {
+        return true;
+      }
+    }
+    if (parent != null) {
+      return parent.contains(name);
+    }
+    return false;
+  }
+
+  String toString() => 'Scope($hashCode $parent)';
+}
+
+Object _convert(v) {
+  if (v is Stream) return new StreamBinding(v);
+  return v;
 }
 
 abstract class ExpressionObserver<E extends Expression> implements Expression {
@@ -416,9 +442,8 @@ class InvokeObserver extends ExpressionObserver<Invoke> implements Invoke {
             .toList(growable: false);
     var receiverValue = receiver._value;
     if (receiverValue == null) {
-      return null;
-    }
-    if (_expr.method == null) {
+      _value = null;
+    } else if (_expr.method == null) {
       if (_expr.isGetter) {
         _value = receiverValue;
       } else {
@@ -475,9 +500,10 @@ _toBool(v) => (v == null) ? false : v;
 
 call(dynamic receiver, List args) {
   if (receiver is Method) {
-    return receiver.mirror.invoke(receiver.symbol, args, null).reflectee;
+    return
+        _convert(receiver.mirror.invoke(receiver.symbol, args, null).reflectee);
   } else {
-    return Function.apply(receiver, args, null);
+    return _convert(Function.apply(receiver, args, null));
   }
 }
 
