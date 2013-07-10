@@ -5,5 +5,7 @@ description: An expressive custom binding syntax for MDV templates
 homepage: https://github.com/dart-lang/fancy-syntax
 dependencies:
   browser: any
-  mdv_observe: any
+  mdv: any
+  observe: any
+dev_dependencies:
   unittest: any

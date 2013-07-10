@@ -16,8 +16,11 @@ BSD-style license that can be found in the LICENSE file.
       import 'dart:html';
       import 'dart:math';
       import 'package:fancy_syntax/syntax.dart';
+      import 'package:mdv/mdv.dart' as mdv;
 
       main() {
+        mdv.initialize();
+
         var globals = {
           'mouse': document.onMouseMove,
           'mouseMax':

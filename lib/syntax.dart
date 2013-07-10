@@ -7,7 +7,9 @@ library fancy_syntax;
 import 'dart:async';
 import 'dart:html';
 import 'dart:collection';
-import 'package:mdv_observe/mdv_observe.dart';
+
+import 'package:observe/observe.dart';
+import 'package:mdv/mdv.dart';
 
 import 'async.dart';
 import 'eval.dart';
@@ -56,7 +58,7 @@ class FancySyntax extends CustomBindingSyntax {
     return model;
   }
 
-  getInstanceFragment(Element template) => template.createInstance();
+  getInstanceFragment(Element template) => template.createInstance(null, 'fancy');
 }
 
 class _Binding extends Object with ObservableMixin {

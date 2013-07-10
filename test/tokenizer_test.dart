@@ -123,7 +123,7 @@ class TokenMatcher extends BaseMatcher {
 
   TokenMatcher(this.kind, this.value);
 
-  bool matches(Token t, MatchState m) => t.kind == kind && t.value == value;
+  bool matches(Token t, Map m) => t.kind == kind && t.value == value;
 
   Description describe(Description d) => d.add('isToken($kind, $value) ');
 }
@@ -143,12 +143,12 @@ class MatcherList extends BaseMatcher {
 
   MatcherList(this.matchers);
 
-  bool matches(List o, MatchState matchState) {
+  bool matches(List o, Map matchState) {
     if (o.length != matchers.length) return false;
     for (int i = 0; i < o.length; i++) {
-      var state = new MatchState();
+      var state = new Map();
       if (!matchers[i].matches(o[i], state)) {
-        matchState.state = {
+        matchState = {
           'index': i,
           'value': o[i],
           'state': state,
@@ -165,11 +165,11 @@ class MatcherList extends BaseMatcher {
   }
 
   Description describeMismatch(item, Description mismatchDescription,
-      MatchState matchState, bool verbose) {
+      Map matchState, bool verbose) {
     if (matchState != null) {
-      var index = matchState.state['index'];
-      var value = matchState.state['value'];
-      var state = matchState.state['state'];
+      var index = matchState['index'];
+      var value = matchState['value'];
+      var state = matchState['state'];
       var matcher = matchers[index];
       mismatchDescription.add("Mismatch at index $index: ");
       matcher.describeMismatch(value, mismatchDescription, state, verbose);

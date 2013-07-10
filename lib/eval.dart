@@ -8,7 +8,7 @@ import 'dart:async';
 import 'dart:collection';
 import 'dart:mirrors';
 
-import 'package:mdv_observe/mdv_observe.dart';
+import 'package:observe/observe.dart';
 
 import 'async.dart';
 import 'expression.dart';
