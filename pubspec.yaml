@@ -1,5 +1,5 @@
 name: fancy_syntax
-version: 0.0.1
+version: 0.0.2
 author: Web UI Authors <html-dev@dartlang.org>
 description: An expressive custom binding syntax for MDV templates
 homepage: https://github.com/dart-lang/fancy-syntax
