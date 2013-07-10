@@ -15,7 +15,8 @@ BSD-style license that can be found in the LICENSE file.
       import 'dart:html';
       import 'package:fancy_syntax/syntax.dart';
       import 'package:fancy_syntax/async.dart';
-      import 'package:mdv_observe/mdv_observe.dart';
+      import 'package:mdv/mdv.dart' as mdv;
+      import 'package:observe/observe.dart';
 
       count(StreamBinding s) {
         var box = new ObservableBox();
@@ -25,6 +26,8 @@ BSD-style license that can be found in the LICENSE file.
       }
 
       main() {
+        mdv.initialize();
+
         var globals = {
           'mouseDown': document.onMouseDown,
           'count': count,

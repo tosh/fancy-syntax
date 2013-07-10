@@ -8,9 +8,11 @@ import 'dart:html';
 import 'package:fancy_syntax/syntax.dart';
 import 'package:unittest/unittest.dart';
 import 'package:unittest/html_enhanced_config.dart';
-import 'package:mdv_observe/mdv_observe.dart';
+import 'package:observe/observe.dart';
+import 'package:mdv/mdv.dart' as mdv;
 
 main() {
+  mdv.initialize();
   useHtmlEnhancedConfiguration();
 
   group('syntax', () {

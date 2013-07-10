@@ -4,7 +4,7 @@
 
 library person;
 
-import 'package:mdv_observe/mdv_observe.dart';
+import 'package:observe/observe.dart';
 
 class Person extends Object with ObservableMixin {
   static const _FIRST_NAME = const Symbol('firstName');

@@ -32,18 +32,11 @@ Mirror getMemberMirror(ClassMirror classMirror, Symbol name) {
   return null;
 }
 
-ClassMirror __objMirror;
-ClassMirror get _objMirror {
-  if (__objMirror == null) {
-    __objMirror = reflectClass(Object);
-  }
-  return __objMirror;
-}
-
 /**
  * Work-around for http://dartbug.com/5794
  */
 bool hasSuperclass(ClassMirror classMirror) {
   var superclass = classMirror.superclass;
-  return (superclass != null) && (superclass != _objMirror);
+  return (superclass != null) &&
+      (superclass.qualifiedName != const Symbol('dart.core.Object'));
 }

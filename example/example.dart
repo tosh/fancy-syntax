@@ -5,10 +5,12 @@
 import 'dart:html';
 
 import 'package:fancy_syntax/syntax.dart';
+import 'package:mdv/mdv.dart' as mdv;
 
 import 'person.dart';
 
 main() {
+  mdv.initialize();
   var john = new Person('John', 'Messerly', ['A', 'B', 'C']);
   var justin = new Person('Justin', 'Fagnani', ['D', 'E', 'F']);
   var globals = {

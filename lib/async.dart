@@ -5,7 +5,7 @@
 library fancy_syntax.async;
 
 import 'dart:async';
-import 'package:mdv_observe/mdv_observe.dart';
+import 'package:observe/observe.dart';
 
 class StreamBinding<T> extends ObservableBox {
   final Stream<T> stream;
