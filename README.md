@@ -10,7 +10,7 @@ Fancy Syntax allows you to write complex binding expressions, with property acce
 ##Overview
 
 ### MDV
-MDV allows you to define templates in directly HTML that are rendered by the browser into the DOM. Templates are bound to a data model, and changes to the data are automatically reflected in the DOM, and changes in HTML inputs are assigned back into the model. The template and model are bound together via binding expressions that are evaluated against the model. These binding expressions are placed in double-curly-braces, or "mustaches".
+MDV allows you to define templates directly in HTML that are rendered by the browser into the DOM. Templates are bound to a data model, and changes to the data are automatically reflected in the DOM, and changes in HTML inputs are assigned back into the model. The template and model are bound together via binding expressions that are evaluated against the model. These binding expressions are placed in double-curly-braces, or "mustaches".
 
 Example:
 
