@@ -149,7 +149,7 @@ Expressions do not support bitwise operators such as &, |, << and >>, or increme
 
 ### List and Map Indexing
 
-List and Map like objects can be access via the index operator: []
+List and Map like objects can be accessed via the index operator: []
 
 Examples:
 
